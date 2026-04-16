@@ -133,11 +133,14 @@ AskUserQuestion([
     multiSelect: false,
     options: [
       { label: "Yes (Recommended)", description: "Planning docs tracked in version control" },
+      { label: "Team Mode", description: "Track shared artifacts (roadmap, plans), ignore local state (STATE.md). Best for multi-person repos." },
       { label: "No", description: "Keep .planning/ local-only (add to .gitignore)" }
     ]
   }
 ])
 ```
+
+**If "Team Mode" selected:** Set `commit_docs: true` AND `team.enabled: true` in config. This auto-enables unique milestone IDs and selective gitignore.
 
 **Round 2 — Workflow agents (same as Step 5):**
 
@@ -443,6 +446,7 @@ questions: [
     multiSelect: false,
     options: [
       { label: "Yes (Recommended)", description: "Planning docs tracked in version control" },
+      { label: "Team Mode", description: "Track shared artifacts (roadmap, plans), ignore local state (STATE.md). Best for multi-person repos." },
       { label: "No", description: "Keep .planning/ local-only (add to .gitignore)" }
     ]
   }
@@ -508,7 +512,7 @@ Create `.planning/config.json` with all settings (CLI fills in remaining default
 
 ```bash
 mkdir -p .planning
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-new-project '{"mode":"[yolo|interactive]","granularity":"[selected]","parallelization":true|false,"commit_docs":true|false,"model_profile":"quality|balanced|budget|inherit","workflow":{"research":true|false,"plan_check":true|false,"verifier":true|false,"nyquist_validation":[false if granularity=coarse, true otherwise]}}'
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-new-project '{"mode":"[yolo|interactive]","granularity":"[selected]","parallelization":true|false,"commit_docs":true|false,"model_profile":"quality|balanced|budget|inherit","team":{"enabled":true|false},"workflow":{"research":true|false,"plan_check":true|false,"verifier":true|false,"nyquist_validation":[false if granularity=coarse, true otherwise]}}'
 ```
 
 **Note:** Run `/gsd:settings` anytime to update model profile, workflow agents, branching strategy, and other preferences.
@@ -521,6 +525,17 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-new-project '{"mode"
 **If commit_docs = Yes:**
 
 - No additional gitignore entries needed
+
+**If Team Mode:**
+
+- Set `commit_docs: true` and `team.enabled: true` in config.json (team.enabled auto-enables unique_milestone_ids, push_branches, pre_merge_check)
+- Generate selective `.planning/.gitignore` that tracks shared artifacts but ignores per-developer state:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" team gitignore --raw > .planning/.gitignore
+```
+
+- Do NOT add `.planning/` to the project root `.gitignore`
 
 **Commit config.json:**
 

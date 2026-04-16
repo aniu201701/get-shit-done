@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, stripShippedMilestones, extractCurrentMilestone, normalizePhaseName, planningPaths, planningDir, planningRoot, toPosixPath, output, error, checkAgentsInstalled } = require('./core.cjs');
+const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, stripShippedMilestones, extractCurrentMilestone, normalizePhaseName, planningPaths, planningDir, planningRoot, toPosixPath, output, error, checkAgentsInstalled, generateMilestoneIdSuffix } = require('./core.cjs');
 
 function getLatestCompletedMilestone(cwd) {
   const milestonesPath = path.join(planningRoot(cwd), 'MILESTONES.md');
@@ -367,6 +367,11 @@ function cmdInitNewMilestone(cwd, raw) {
     // Config
     commit_docs: config.commit_docs,
     research_enabled: config.research,
+
+    // Team mode
+    team_enabled: !!(config.team?.enabled),
+    unique_milestone_ids: !!(config.team?.enabled || config.team?.unique_milestone_ids),
+    milestone_id_suffix: (config.team?.enabled || config.team?.unique_milestone_ids) ? generateMilestoneIdSuffix() : null,
 
     // Current milestone
     current_milestone: milestone.version,

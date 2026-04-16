@@ -3993,12 +3993,13 @@ function install(isGlobal, runtime = 'claude') {
   // Replaces $HOME/.claude/ or ~/.claude/ so the result is <pathPrefix>get-shit-done/bin/...
   // For global installs: use $HOME/ so paths expand correctly inside double-quoted
   // shell commands (~ does NOT expand inside double quotes, causing MODULE_NOT_FOUND).
-  // For local installs: use resolved absolute path (may be outside $HOME).
+  // For local installs: use {{ROOT}}/<dirName>/ placeholder so the repo is portable
+  // across machines. CLAUDE.md instructs the AI to replace {{ROOT}} with CWD at runtime.
   const resolvedTarget = path.resolve(targetDir).replace(/\\/g, '/');
   const homeDir = os.homedir().replace(/\\/g, '/');
   const pathPrefix = isGlobal && resolvedTarget.startsWith(homeDir)
     ? '$HOME' + resolvedTarget.slice(homeDir.length) + '/'
-    : `${resolvedTarget}/`;
+    : `{{ROOT}}/${dirName}/`;
 
   let runtimeLabel = 'Claude Code';
   if (isOpencode) runtimeLabel = 'OpenCode';
@@ -4723,6 +4724,79 @@ function promptLocation(runtimes) {
   });
 }
 
+// ─── Project Instructions Injection (local install) ─────────────────────────
+
+const GSD_INSTRUCTIONS_MARKER = '<!-- GSD:PROJECT_INSTRUCTIONS -->';
+const GSD_INSTRUCTIONS_CLOSE_MARKER = '<!-- /GSD:PROJECT_INSTRUCTIONS -->';
+
+/**
+ * Generate the GSD project instructions block.
+ * Injected into CLAUDE.md / AGENTS.md for local installs so that:
+ * 1. {{ROOT}} placeholder is resolved at runtime
+ * 2. Language preference is set
+ */
+function generateProjectInstructions() {
+  return [
+    GSD_INSTRUCTIONS_MARKER,
+    '',
+    '# GSD',
+    '',
+    '## Path Convention',
+    '',
+    'This project uses `{{ROOT}}` as a placeholder for the project root directory in all GSD workflow and command files.',
+    'Before executing any bash command that contains `{{ROOT}}`, replace it with the current working directory (CWD) of this terminal session.',
+    '',
+    '## Language',
+    '',
+    'I am a Singaporean Chinese developer. Mandarin Chinese is my primary language.',
+    'Please communicate in Chinese by default during our conversations.',
+    '',
+    GSD_INSTRUCTIONS_CLOSE_MARKER,
+  ].join('\n');
+}
+
+/**
+ * Inject GSD project instructions into CLAUDE.md / AGENTS.md for local installs.
+ * Creates the file if it doesn't exist; appends (or replaces) the GSD block if it does.
+ */
+function injectProjectInstructions(cwd) {
+  const candidates = ['CLAUDE.md', 'AGENTS.md'];
+  const block = generateProjectInstructions();
+
+  let injected = false;
+
+  for (const filename of candidates) {
+    const filePath = path.join(cwd, filename);
+    if (fs.existsSync(filePath)) {
+      let content = fs.readFileSync(filePath, 'utf8');
+
+      if (content.includes(GSD_INSTRUCTIONS_MARKER)) {
+        // Replace existing block
+        const startIdx = content.indexOf(GSD_INSTRUCTIONS_MARKER);
+        const endIdx = content.indexOf(GSD_INSTRUCTIONS_CLOSE_MARKER);
+        if (endIdx !== -1) {
+          content = content.slice(0, startIdx) + block + content.slice(endIdx + GSD_INSTRUCTIONS_CLOSE_MARKER.length);
+          fs.writeFileSync(filePath, content, 'utf8');
+          console.log(`  ${green}✓${reset} Updated GSD instructions in ${filename}`);
+        }
+      } else {
+        // Append block
+        const separator = content.endsWith('\n') ? '\n' : '\n\n';
+        fs.writeFileSync(filePath, content + separator + block + '\n', 'utf8');
+        console.log(`  ${green}✓${reset} Added GSD instructions to ${filename}`);
+      }
+      injected = true;
+    }
+  }
+
+  // Neither file exists — create CLAUDE.md
+  if (!injected) {
+    const filePath = path.join(cwd, 'CLAUDE.md');
+    fs.writeFileSync(filePath, block + '\n', 'utf8');
+    console.log(`  ${green}✓${reset} Created CLAUDE.md with GSD instructions`);
+  }
+}
+
 /**
  * Install GSD for all selected runtimes
  */
@@ -4732,6 +4806,11 @@ function installAllRuntimes(runtimes, isGlobal, isInteractive) {
   for (const runtime of runtimes) {
     const result = install(isGlobal, runtime);
     results.push(result);
+  }
+
+  // For local installs, inject {{ROOT}} convention and language preference into CLAUDE.md / AGENTS.md
+  if (!isGlobal) {
+    injectProjectInstructions(process.cwd());
   }
 
   const statuslineRuntimes = ['claude', 'gemini'];

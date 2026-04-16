@@ -188,6 +188,29 @@ Strategy: $STRATEGY
 mkdir -p "$TARGET_PATH/.planning"
 ```
 
+**If team mode is enabled** (check source repo's `.planning/config.json` for `team.enabled: true`):
+
+Copy shared planning artifacts from the source repo so the workspace has the same roadmap and requirements:
+
+```bash
+# Copy shared artifacts from source repo's .planning/
+for file in PROJECT.md ROADMAP.md REQUIREMENTS.md config.json; do
+  if [ -f "$SOURCE_REPO_PATH/.planning/$file" ]; then
+    cp "$SOURCE_REPO_PATH/.planning/$file" "$TARGET_PATH/.planning/$file"
+  fi
+done
+
+# Copy research directory if exists
+if [ -d "$SOURCE_REPO_PATH/.planning/research" ]; then
+  cp -r "$SOURCE_REPO_PATH/.planning/research" "$TARGET_PATH/.planning/research"
+fi
+
+# Generate selective .gitignore for team mode
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" team gitignore --raw > "$TARGET_PATH/.planning/.gitignore"
+```
+
+This ensures each developer's workspace starts with the same project context while maintaining independent state (STATE.md).
+
 ## 9. Report and Next Steps
 
 **If all repos succeeded:**

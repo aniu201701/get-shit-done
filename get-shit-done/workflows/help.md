@@ -366,6 +366,18 @@ Usage: `/gsd:pr-branch` or `/gsd:pr-branch main`
 
 ---
 
+**`/gsd:merge-milestone [target]`**
+Merge a milestone branch back to main with squash merge (team mode).
+
+- Cleans ephemeral .planning/ state files (STATE.md, locks) before merge
+- Auto-resolves .planning/ state conflicts
+- Optional branch cleanup and push
+- Designed for team mode workflows with per-developer branches
+
+Usage: `/gsd:merge-milestone` or `/gsd:merge-milestone main`
+
+---
+
 **`/gsd:plant-seed [idea]`**
 Capture a forward-looking idea with trigger conditions for automatic surfacing.
 

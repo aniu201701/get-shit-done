@@ -198,6 +198,7 @@ function loadConfig(cwd) {
   const configPath = path.join(cwd, '.planning', 'config.json');
   const defaults = {
     model_profile: 'balanced',
+    team: { enabled: false, unique_milestone_ids: false, push_branches: false, pre_merge_check: false },
     commit_docs: true,
     search_gitignored: false,
     branching_strategy: 'none',
@@ -279,7 +280,21 @@ function loadConfig(cwd) {
       return defaults.parallelization;
     })();
 
+    // Resolve team mode: team.enabled=true is a shorthand that enables all team sub-settings
+    const teamEnabled = (() => {
+      const teamObj = parsed.team;
+      if (typeof teamObj === 'object' && teamObj !== null) return !!teamObj.enabled;
+      return false;
+    })();
+    const team = {
+      enabled: teamEnabled,
+      unique_milestone_ids: teamEnabled || !!(parsed.team?.unique_milestone_ids),
+      push_branches: teamEnabled || !!(parsed.team?.push_branches),
+      pre_merge_check: teamEnabled || !!(parsed.team?.pre_merge_check),
+    };
+
     return {
+      team,
       model_profile: get('model_profile') ?? defaults.model_profile,
       commit_docs: (() => {
         const explicit = get('commit_docs', { section: 'planning', field: 'commit_docs' });
@@ -1185,6 +1200,61 @@ function readSubdirectories(dirPath, sort = false) {
   }
 }
 
+// ─── Team mode gitignore ─────────────────────────────────────────────────────
+
+/**
+ * Generate the selective .planning/.gitignore content for team mode.
+ * Tracks shared planning artifacts (PROJECT.md, ROADMAP.md, REQUIREMENTS.md, plans, summaries)
+ * while ignoring per-developer ephemeral state (STATE.md, active-workstream, locks).
+ */
+function generateTeamPlanningGitignore() {
+  return [
+    '# GSD Team Mode — selective tracking',
+    '# Shared artifacts are tracked; per-developer state is ignored.',
+    '',
+    '# ── Per-developer ephemeral state (do NOT track) ──',
+    'STATE.md',
+    'STATE.md.lock',
+    '.lock',
+    'auto.lock',
+    'active-workstream',
+    'WAITING.json',
+    'metrics.json',
+    'activity/',
+    'runtime/',
+    'worktrees/',
+    '*-CONTINUE.md',
+    'continue.md',
+    '',
+    '# ── Per-developer auxiliary artifacts (do NOT track) ──',
+    '# Each developer runs their own research for their scope;',
+    '# key conclusions are captured in PROJECT.md Key Decisions.',
+    'research/',
+    'reports/',
+    'forensics/',
+    'debug/',
+    'todos/',
+    '',
+    '# ── Shared artifacts (these ARE tracked) ──',
+    '# PROJECT.md, ROADMAP.md, REQUIREMENTS.md, MILESTONES.md, RETROSPECTIVE.md',
+    '# config.json, phases/, milestones/, codebase/, quick/',
+    '',
+  ].join('\n');
+}
+
+/**
+ * Generate unique milestone ID suffix for team mode.
+ * Returns a 6-char lowercase alphanumeric string.
+ */
+function generateMilestoneIdSuffix() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 module.exports = {
   output,
   error,
@@ -1227,4 +1297,6 @@ module.exports = {
   readSubdirectories,
   getAgentsDir,
   checkAgentsInstalled,
+  generateTeamPlanningGitignore,
+  generateMilestoneIdSuffix,
 };

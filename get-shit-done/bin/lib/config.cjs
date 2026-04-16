@@ -14,6 +14,7 @@ const {
 const VALID_CONFIG_KEYS = new Set([
   'mode', 'granularity', 'parallelization', 'commit_docs', 'model_profile',
   'search_gitignored', 'brave_search', 'firecrawl', 'exa_search',
+  'team.enabled', 'team.unique_milestone_ids', 'team.push_branches', 'team.pre_merge_check',
   'workflow.research', 'workflow.plan_check', 'workflow.verifier',
   'workflow.nyquist_validation', 'workflow.ui_phase', 'workflow.ui_safety_gate',
   'workflow.auto_advance', 'workflow.node_repair', 'workflow.node_repair_budget',
@@ -108,6 +109,12 @@ function buildNewProjectConfig(userChoices) {
     brave_search: hasBraveSearch,
     firecrawl: hasFirecrawl,
     exa_search: hasExaSearch,
+    team: {
+      enabled: false,
+      unique_milestone_ids: false,
+      push_branches: false,
+      pre_merge_check: false,
+    },
     git: {
       branching_strategy: 'none',
       phase_branch_template: 'gsd/phase-{phase}-{slug}',
@@ -140,6 +147,11 @@ function buildNewProjectConfig(userChoices) {
     ...hardcoded,
     ...userDefaults,
     ...choices,
+    team: {
+      ...hardcoded.team,
+      ...(userDefaults.team || {}),
+      ...(choices.team || {}),
+    },
     git: {
       ...hardcoded.git,
       ...(userDefaults.git || {}),

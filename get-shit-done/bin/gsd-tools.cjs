@@ -554,6 +554,20 @@ async function runCommand(command, args, cwd, raw) {
       break;
     }
 
+    case 'team': {
+      const subcommand = args[1];
+      if (subcommand === 'gitignore') {
+        const content = core.generateTeamPlanningGitignore();
+        core.output({ content }, raw, content);
+      } else if (subcommand === 'milestone-id-suffix') {
+        const suffix = core.generateMilestoneIdSuffix();
+        core.output({ suffix }, raw, suffix);
+      } else {
+        core.error('Unknown team subcommand. Available: gitignore, milestone-id-suffix');
+      }
+      break;
+    }
+
     case 'history-digest': {
       commands.cmdHistoryDigest(cwd, raw);
       break;

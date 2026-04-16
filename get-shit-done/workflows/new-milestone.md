@@ -48,6 +48,7 @@ If the flag is absent, keep the current behavior of continuing phase numbering f
 
 - Parse last version from MILESTONES.md
 - Suggest next version (v1.0 → v1.1, or v2.0 for major)
+- **If `unique_milestone_ids` is true:** Append the `milestone_id_suffix` from init to the version (e.g., `v1.1-abc123`). This prevents collisions when multiple developers create milestones independently. Show the full ID to the user.
 - Confirm with user
 
 ## 3.5. Verify Milestone Understanding
@@ -141,6 +142,16 @@ Delete MILESTONE-CONTEXT.md if exists (consumed).
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: start milestone v[X.Y] [Name]" --files .planning/PROJECT.md .planning/STATE.md
 ```
 
+**If `team_enabled` is true:** After committing, suggest the developer create a milestone branch for isolated work:
+
+```
+Tip: In team mode, each developer should work on their own branch:
+  git checkout -b milestone/v[X.Y] (or milestone/v[X.Y]-[suffix] if unique IDs enabled)
+
+Each developer runs /gsd:new-workspace or creates a worktree manually.
+After completing the milestone, use /gsd:merge-milestone to squash-merge back to main.
+```
+
 ## 7. Load Context and Resolve Models
 
 ```bash
@@ -151,7 +162,7 @@ AGENT_SKILLS_SYNTHESIZER=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" 
 AGENT_SKILLS_ROADMAPPER=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" agent-skills gsd-roadmapper 2>/dev/null)
 ```
 
-Extract from init JSON: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `research_enabled`, `current_milestone`, `project_exists`, `roadmap_exists`, `latest_completed_milestone`, `phase_dir_count`, `phase_archive_path`.
+Extract from init JSON: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `research_enabled`, `current_milestone`, `project_exists`, `roadmap_exists`, `latest_completed_milestone`, `phase_dir_count`, `phase_archive_path`, `team_enabled`, `unique_milestone_ids`, `milestone_id_suffix`.
 
 ## 7.5 Reset-phase safety (only when `--reset-phase-numbers`)
 

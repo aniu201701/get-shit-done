@@ -34,6 +34,7 @@ Parse current values (default to `true` if not present):
 - `workflow.ui_safety_gate` — prompt to run /gsd:ui-phase before planning frontend phases (default: true if absent)
 - `model_profile` — which model each agent uses (default: `balanced`)
 - `git.branching_strategy` — branching approach (default: `"none"`)
+- `team.enabled` — team collaboration mode (default: `false`)
 </step>
 
 <step name="present_settings">
@@ -128,6 +129,15 @@ AskUserQuestion([
     ]
   },
   {
+    question: "Enable team collaboration mode? (multi-person parallel development)",
+    header: "Team Mode",
+    multiSelect: false,
+    options: [
+      { label: "No (Recommended)", description: "Single developer workflow. All .planning/ files local." },
+      { label: "Yes", description: "Track shared artifacts in git, ignore local state. Unique milestone IDs, per-developer worktrees." }
+    ]
+  },
+  {
     question: "Enable context window warnings? (injects advisory messages when context is getting full)",
     header: "Ctx Warnings",
     multiSelect: false,
@@ -177,6 +187,12 @@ Merge new settings into existing config.json:
     "research_before_questions": true/false,
     "discuss_mode": "discuss" | "assumptions",
     "skip_discuss": true/false
+  },
+  "team": {
+    "enabled": true/false,
+    "unique_milestone_ids": true/false,
+    "push_branches": true/false,
+    "pre_merge_check": true/false
   },
   "git": {
     "branching_strategy": "none" | "phase" | "milestone",
@@ -258,11 +274,20 @@ Display:
 | UI Phase             | {On/Off} |
 | UI Safety Gate       | {On/Off} |
 | Git Branching        | {None/Per Phase/Per Milestone} |
+| Team Mode            | {On/Off} |
 | Skip Discuss         | {On/Off} |
 | Context Warnings     | {On/Off} |
 | Saved as Defaults    | {Yes/No} |
 
 These settings apply to future /gsd:plan-phase and /gsd:execute-phase runs.
+
+**If Team Mode was just enabled:**
+- Generate selective `.planning/.gitignore`:
+  ```bash
+  node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" team gitignore --raw > .planning/.gitignore
+  ```
+- Remove `.planning/` from project root `.gitignore` if present
+- Commit shared planning artifacts that should now be tracked
 
 Quick commands:
 - /gsd:set-profile <profile> — switch model profile
